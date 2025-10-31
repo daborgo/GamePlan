@@ -23,13 +23,15 @@ struct EventView: View {
                     }
                     .padding()
                 }.background(Color.gray.opacity(0.5)).cornerRadius(8)
-                Button("Add Event", action: {
-                    
-                }).buttonStyle(.borderedProminent)
-                Button("Delete Event", action: {
-                    
-                }).buttonStyle(.borderedProminent)
-                searchBar
+                HStack {
+                    Button("Add Event", action: {
+                        
+                    }).buttonStyle(.borderedProminent)
+                    Button("Delete Event", action: {
+                        
+                    }).buttonStyle(.borderedProminent)
+                }
+                searchBar.padding(.top, 12)
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
