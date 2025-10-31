@@ -35,7 +35,7 @@ struct EventView: View {
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Home")
+            .navigationTitle("Event View")
             .containerRelativeFrame([.horizontal, .vertical])
             .background(Gradient(colors: [.cyan, .purple, .purple, .purple]).opacity(0.5))
         }.tint(.purple)
