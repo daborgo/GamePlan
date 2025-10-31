@@ -30,7 +30,7 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Home")
             .containerRelativeFrame([.horizontal, .vertical])
-            .background(Gradient(colors: [.cyan, .purple, .purple, .purple]).opacity(0.6))
+            .background(Gradient(colors: [.cyan, .purple, .purple, .purple]).opacity(0.5))
         }.tint(.purple)
     }
 }
