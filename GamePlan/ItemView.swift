@@ -2,7 +2,7 @@
 //  ItemView.swift
 //  GamePlan
 //
-//  Created by Diego Borgo on 11/23/25.
+//  Created by Diego Borgo on 11/20/25.
 //
 
 import SwiftUI
