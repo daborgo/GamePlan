@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct ContentView: View {
-//    @StateObject var data = FinanceData()
     @State private var path = NavigationPath()
 
     var body: some View {
@@ -17,10 +16,10 @@ struct ContentView: View {
                 Spacer()
                 Text("Game Plan").font(.largeTitle).fontWeight(.bold)
                 Spacer()
-                NavigationLink(destination: EventView(/*data: data*/)) {
+                NavigationLink(destination: EventView()) {
                     Text("Event View").padding()
                 }.buttonStyle(.borderedProminent)
-                NavigationLink(destination: MapView(/*data: data*/)) {
+                NavigationLink(destination: MapView()) {
                     Text("Map View").padding()
                 }.buttonStyle(.borderedProminent)
                 Spacer()

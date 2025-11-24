@@ -6,12 +6,13 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct GamePlanApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView().modelContainer(for: Event.self)
         }
     }
 }

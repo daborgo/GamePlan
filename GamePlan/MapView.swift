@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import MapKit
 
 struct Location: Identifiable {
@@ -15,13 +16,12 @@ struct Location: Identifiable {
 }
 
 struct MapView: View {
-//    @StateObject var data = FinanceData()
-    
-    var location = CLLocationCoordinate2D(
-        latitude: 33.4255,
-        longitude: -111.9400
-    )
-    
+    @Environment(\.modelContext) private var context
+    @Query var events: [Event]
+
+    var event: Event? = nil
+
+    // fallback default
     @State var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(
             latitude: 33.4255,
@@ -30,12 +30,7 @@ struct MapView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
     )
 
-    @State var markers = [
-        Location(name: "Tempe", coordinate: CLLocationCoordinate2D(
-            latitude: 33.4255,
-            longitude: -111.9400
-        ))
-    ]
+    @State var markers: [Location] = []
 
     @State var searchText: String = ""
 
@@ -44,22 +39,19 @@ struct MapView: View {
             VStack {
                 ZStack(alignment: .bottom) {
                     Map(coordinateRegion: $region, interactionModes: .all, annotationItems: markers){ location in
-                        MapMarker(coordinate: location.coordinate)
-//                        MapAnnotation(coordinate: location.coordinate){
-//                            if !searched {
-//                                Text(park.name)
-//                            } else {
-//                                Text(location.name)
-//                            }
-//                            Circle().strokeBorder(.red, lineWidth: 2).frame(width:20, height: 20)
-//                        }
+//                        MapMarker(coordinate: location.coordinate)
+                        MapAnnotation(coordinate: location.coordinate) {
+                            VStack {
+                                Text(location.name).font(.caption)
+                                Image(systemName: "mappin.circle.fill").font(.title2).foregroundColor(.red)
+                            }
+                        }
                     }
                 }
                 .ignoresSafeArea()
-//                .onAppear {
-//                    find(cityState: park.loc)
-//                }
-                searchBar.padding(.top, 12)
+                .onAppear {
+                    populateMap()
+                }
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
@@ -69,37 +61,20 @@ struct MapView: View {
         }.tint(.purple)
     }
     
-    var searchBar: some View {
-        HStack {
-            Button {
-//                let searchRequest = MKLocalSearch.Request()
-//                searchRequest.naturalLanguageQuery = searchText
-//                searchRequest.region = region
-//
-//                MKLocalSearch(request: searchRequest).start { response, error in
-//                    guard let response = response else {
-//                        print("Error: \(error?.localizedDescription ?? "Unknown error").")
-//                        return
-//                    }
-//                    region = response.boundingRegion
-//                    markers = response.mapItems.map { item in
-//                        Location(name: item.name ?? "", coordinate: item.placemark.coordinate)
-//                    }
-//                    searched = true
-//                }
-            } label: {
-                Image(systemName: "location.magnifyingglass")
-                    .resizable()
-                    .foregroundColor(.accentColor)
-                    .frame(width: 24, height: 24)
-                    .padding(.trailing, 12)
+    func populateMap() {
+        if let event = event, let lat = event.lat, let lon = event.lon {
+            let loc = Location(name: event.name, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
+            markers = [loc]
+            region = MKCoordinateRegion(center:loc.coordinate, span:MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
+            )
+        } else {
+            markers = events.compactMap { e in
+                guard let lat = e.lat, let lon = e.lon else { return nil }
+                return Location(name:e.name, coordinate:CLLocationCoordinate2D(latitude:lat, longitude:lon))
             }
-            TextField("Search for a place of interest", text: $searchText)
-        }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 8)
-                .foregroundColor(.white)
+            
+            //US map
+            region = MKCoordinateRegion(center:CLLocationCoordinate2D(latitude:39.8283, longitude:-98.5795), span:MKCoordinateSpan(latitudeDelta:50, longitudeDelta:50))
         }
     }
 }

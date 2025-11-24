@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
+import MapKit
 
 struct EventView: View {
-//    @StateObject var data = FinanceData()
+    @Environment(\.modelContext) private var context
+    @Query var events: [Event]
     
     @State var searchText: String = ""
     
@@ -24,19 +27,23 @@ struct EventView: View {
     @State var showingDeleteEvent: Bool = false
     
     @State var err: String = ""
-    @State var deleteErr: String = ""
 
     var body: some View {
         NavigationStack {
             VStack {
                 ScrollView(.vertical) {
                     VStack {
-                        ForEach(0..<20) { i in
-                            Text("Event \(i+1)").padding().frame(maxWidth: .infinity).background(.white).cornerRadius(8)
+                        ForEach(filterEventList) { event in
+                            VStack(alignment: .leading) {
+                                NavigationLink(destination: ItemView(event: event)) {
+                                    Text("\(event.name) - \(event.loc)").padding().frame(maxWidth: .infinity).background(.white).cornerRadius(8)
+                                }
+                            }
                         }
                     }
                     .padding()
-                }.background(Color.gray.opacity(0.5)).cornerRadius(8)
+                    .frame(maxWidth: .infinity)
+                }.background(Color.gray.opacity(0.5)).cornerRadius(8).frame(maxWidth: .infinity)
                 HStack {
                     Button("Add Event", action: {
                         showingAddEvent = true
@@ -76,12 +83,7 @@ struct EventView: View {
                             TextField("Location", text: $addEventLoc)
                         }
                         Button("Add", action: {
-                            addEventName = ""
-                            addEventDesc = ""
-                            addEventDate = ""
-                            addEventTime = ""
-                            addEventLoc = ""
-                            showingAddEvent = false
+                            addEvent()
                         }).buttonStyle(.borderedProminent)
                         Text(err).padding().foregroundColor(.red)
                     }
@@ -112,15 +114,16 @@ struct EventView: View {
                             Text("Name: ")
                             TextField("Name", text: $deleteEventName)
                         }
-                        Button("Search", action: {
-                            deleteErr = "Found event!"
-                        }).buttonStyle(.borderedProminent)
-                        Text(deleteErr).padding().foregroundColor(.green)
                         Button("Delete", action: {
-                            deleteEventName = ""
-                            deleteErr = ""
-                            err = ""
-                            showingDeleteEvent = false
+                            let matches = events.filter { $0.name == deleteEventName }
+                            if let delEvent = matches.first {
+                                context.delete(delEvent)
+                                deleteEventName = ""
+                                err = ""
+                                showingDeleteEvent = false
+                            } else {
+                                err = "ERROR: Event not found."
+                            }
                         }).buttonStyle(.borderedProminent).padding(.top, 12)
                         Text(err).padding().foregroundColor(.red)
                     }
@@ -131,7 +134,6 @@ struct EventView: View {
                         ToolbarItem(placement: .navigationBarLeading) {
                             Button(action: {
                                 deleteEventName = ""
-                                deleteErr = ""
                                 err = ""
                                 showingDeleteEvent = false
                             }, label: {
@@ -144,37 +146,53 @@ struct EventView: View {
         }.tint(.purple)
     }
     
+    var filterEventList: [Event] {
+        if searchText.isEmpty {
+            return events
+        } else {
+            return events.filter { event in
+                event.name.contains(searchText) || event.loc.contains(searchText)
+            }
+        }
+    }
+    
     var searchBar: some View {
         HStack {
-            Button {
-//                let searchRequest = MKLocalSearch.Request()
-//                searchRequest.naturalLanguageQuery = searchText
-//                searchRequest.region = region
-//                
-//                MKLocalSearch(request: searchRequest).start { response, error in
-//                    guard let response = response else {
-//                        print("Error: \(error?.localizedDescription ?? "Unknown error").")
-//                        return
-//                    }
-//                    region = response.boundingRegion
-//                    markers = response.mapItems.map { item in
-//                        Location(name: item.name ?? "", coordinate: item.placemark.coordinate)
-//                    }
-//                    searched = true
-//                }
-            } label: {
-                Image(systemName: "location.magnifyingglass")
-                    .resizable()
-                    .foregroundColor(.accentColor)
-                    .frame(width: 24, height: 24)
-                    .padding(.trailing, 12)
-            }
-            TextField("Search for a place of interest", text: $searchText)
+            TextField("Search events by name or location", text: $searchText)
         }
         .padding()
         .background {
             RoundedRectangle(cornerRadius: 8)
                 .foregroundColor(.white)
+        }
+    }
+    
+    func addEvent() {
+        if addEventName.isEmpty || addEventDesc.isEmpty || addEventDate.isEmpty || addEventTime.isEmpty || addEventLoc.isEmpty {
+            err = "ERROR: Please fill all fields."
+            return
+        }
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = addEventLoc
+        MKLocalSearch(request: request).start { response, error in
+            guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
+                DispatchQueue.main.async {
+                    err = "ERROR: Could not find location."
+                }
+                return
+            }
+            DispatchQueue.main.async {
+                let event = Event(n:addEventName, d:addEventDesc, da:addEventDate, t:addEventTime, l:addEventLoc, lat:coordinate.latitude, lon:coordinate.longitude)
+                context.insert(event)
+                addEventName = ""
+                addEventDesc = ""
+                addEventDate = ""
+                addEventTime = ""
+                addEventLoc = ""
+                err = ""
+                showingAddEvent = false
+            }
         }
     }
 }
