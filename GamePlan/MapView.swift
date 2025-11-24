@@ -68,9 +68,8 @@ struct MapView: View {
             region = MKCoordinateRegion(center:loc.coordinate, span:MKCoordinateSpan(latitudeDelta: 0.07, longitudeDelta: 0.07)
             )
         } else {
-            markers = events.compactMap { e in
-                guard let lat = e.lat, let lon = e.lon else { return nil }
-                return Location(name:e.name, coordinate:CLLocationCoordinate2D(latitude:lat, longitude:lon))
+            markers = events.map { e in
+                return Location(name:e.name, coordinate:CLLocationCoordinate2D(latitude:e.lat!, longitude:e.lon!))
             }
             
             //US map

@@ -13,6 +13,9 @@ struct EventView: View {
     @Environment(\.modelContext) private var context
     @Query var events: [Event]
     
+    @StateObject var webVM = jsonWebVM()
+    @State var apiText: String = ""
+    
     @State var searchText: String = ""
     
     @State var addEventName: String = ""
@@ -31,6 +34,12 @@ struct EventView: View {
     var body: some View {
         NavigationStack {
             VStack {
+                HStack {
+                    TextField("Enter a date (YYYY-MM-DD)", text: $apiText)
+                    Button("Get API Events", action: {
+                        apiQueryAndAdd()
+                    }).buttonStyle(.borderedProminent)
+                }
                 ScrollView(.vertical) {
                     VStack {
                         ForEach(filterEventList) { event in
@@ -51,6 +60,11 @@ struct EventView: View {
                     Button("Delete Event", action: {
                         showingDeleteEvent = true
                     }).buttonStyle(.borderedProminent)
+                    Button("Clear All", action: {
+                        for event in events {
+                            context.delete(event)
+                        }
+                    }).buttonStyle(.borderedProminent).tint(.red)
                 }
                 searchBar.padding(.top, 12)
             }
@@ -83,7 +97,11 @@ struct EventView: View {
                             TextField("Location", text: $addEventLoc)
                         }
                         Button("Add", action: {
-                            addEvent()
+                            if addEventName.isEmpty || addEventDesc.isEmpty || addEventDate.isEmpty || addEventTime.isEmpty || addEventLoc.isEmpty {
+                                err = "ERROR: Please fill all fields."
+                                return
+                            }
+                            addEvent(n:addEventName, d:addEventDesc, da:addEventDate, t:addEventTime, l:addEventLoc)
                         }).buttonStyle(.borderedProminent)
                         Text(err).padding().foregroundColor(.red)
                     }
@@ -167,14 +185,9 @@ struct EventView: View {
         }
     }
     
-    func addEvent() {
-        if addEventName.isEmpty || addEventDesc.isEmpty || addEventDate.isEmpty || addEventTime.isEmpty || addEventLoc.isEmpty {
-            err = "ERROR: Please fill all fields."
-            return
-        }
-
+    func addEvent(n:String, d:String, da:String, t:String, l:String) {
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = addEventLoc
+        request.naturalLanguageQuery = l
         MKLocalSearch(request: request).start { response, error in
             guard let coordinate = response?.mapItems.first?.placemark.coordinate else {
                 DispatchQueue.main.async {
@@ -183,7 +196,7 @@ struct EventView: View {
                 return
             }
             DispatchQueue.main.async {
-                let event = Event(n:addEventName, d:addEventDesc, da:addEventDate, t:addEventTime, l:addEventLoc, lat:coordinate.latitude, lon:coordinate.longitude)
+                let event = Event(n:n, d:d, da:da, t:t, l:l, lat:coordinate.latitude, lon:coordinate.longitude)
                 context.insert(event)
                 addEventName = ""
                 addEventDesc = ""
@@ -192,6 +205,18 @@ struct EventView: View {
                 addEventLoc = ""
                 err = ""
                 showingAddEvent = false
+            }
+        }
+    }
+    
+    func apiQueryAndAdd() {
+        webVM.getJsonData(d:apiText)
+        DispatchQueue.main.asyncAfter(deadline: .now()+1) {
+            for e in webVM.locArray {
+                if events.contains(where: { $0.name == e.name && $0.date == e.date }) {
+                    continue
+                }
+                addEvent(n:e.name, d:e.desc, da:e.date, t:e.time, l:e.loc)
             }
         }
     }
